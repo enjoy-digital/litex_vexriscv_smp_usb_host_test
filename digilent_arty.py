@@ -65,6 +65,7 @@ class BaseSoC(SoCCore):
         platform = arty.Platform(variant=variant, toolchain=toolchain)
 
         # SoCCore ----------------------------------------------------------------------------------
+        kwargs["cpu_type"] = "vexriscv_smp"
         SoCCore.__init__(self, platform, sys_clk_freq,
             ident          = "LiteX SoC on Arty A7",
             ident_version  = ident_version,
