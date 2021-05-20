@@ -115,6 +115,25 @@ class BaseSoC(SoCCore):
             pads         = platform.request_all("user_led"),
             sys_clk_freq = sys_clk_freq)
 
+        # USB Host ---------------------------------------------------------------------------------
+        from usb_host import USBHost
+        from litex.build.generic_platform import Subsignal, Pins, IOStandard
+        _usb_pmod_ios = [
+            ("usb_pmoda", 0,
+                Subsignal("dp_read",         Pins("pmoda:1")), # FIXME.
+                Subsignal("dp_write",        Pins("pmoda:2")), # FIXME.
+                Subsignal("dp_write_enable", Pins("pmoda:3")), # FIXME.
+                Subsignal("dm_read",         Pins("pmoda:4")), # FIXME.
+                Subsignal("dm_write",        Pins("pmoda:5")), # FIXME.
+                Subsignal("dm_write_enable", Pins("pmoda:6")), # FIXME.
+                IOStandard("LVCMOS33"),
+            )
+        ]
+        platform.add_extension(_usb_pmod_ios)
+        self.submodules.usb_host = USBHost(platform, platform.request("usb_pmoda"))
+        self.bus.add_slave("usb_host_ctrl", self.usb_host.wb_ctrl, region=SoCRegion(origin=0x80000000, size=0x100000, cached=False)) # FIXME: Mapping.
+        self.dma_bus.add_master("usb_host_dma", master=self.usb_host.wb_dma)
+
 # Build --------------------------------------------------------------------------------------------
 
 def main():
