@@ -46,7 +46,7 @@ class VexRiscvSMP(CPU):
     icache_size          = 4096
     dcache_ways          = 1
     icache_ways          = 1
-    coherent_dma         = False
+    coherent_dma         = True
     litedram_width       = 32
     dcache_width         = 32
     icache_width         = 32
