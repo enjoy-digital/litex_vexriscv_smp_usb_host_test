@@ -31,6 +31,8 @@ from litespi.opcodes import SpiNorFlashOpCodes as Codes
 from litespi.phy.generic import LiteSPIPHY
 from litespi import LiteSPI
 
+from vexriscv_smp import VexRiscvSMP
+
 # CRG ----------------------------------------------------------------------------------------------
 
 class _CRG(Module):
@@ -66,6 +68,7 @@ class BaseSoC(SoCCore):
 
         # SoCCore ----------------------------------------------------------------------------------
         kwargs["cpu_type"] = "vexriscv_smp"
+        kwargs["cpu_cls"]  = VexRiscvSMP
         SoCCore.__init__(self, platform, sys_clk_freq,
             ident          = "LiteX SoC on Arty A7",
             ident_version  = ident_version,
