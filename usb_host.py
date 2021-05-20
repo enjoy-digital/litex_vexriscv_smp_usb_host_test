@@ -3,12 +3,19 @@ from migen import *
 from litex.soc.interconnect.csr import *
 from litex.soc.interconnect import wishbone
 
+from litex.build.io import SDRTristate
+
 # USB Host -----------------------------------------------------------------------------------------
 
 class USBHost(Module, AutoCSR):
-    def __init__(self, platform, usb_pads):
+    def __init__(self, platform, pads):
         self.wb_ctrl = wb_ctrl = wishbone.Interface(data_width=32)
-        self.wb_dma  = wb_dma  = wishbone.Interface(data_width=32) # CHECKME.
+        self.wb_dma  = wb_dma  = wishbone.Interface(data_width=32)
+
+        usb_ios = Record([
+            ("dp_i",  1), ("dp_o",  1), ("dp_oe", 1),
+            ("dm_i",  1), ("dm_o",  1), ("dm_oe", 1),
+        ])
 
         self.specials += Instance("UsbOhciWishbone",
             # Clk / Rst.
@@ -41,11 +48,23 @@ class USBHost(Module, AutoCSR):
             o_io_interrupt = Signal(), # FIXME: Connect.
 
             # USB
-            i_io_usb_0_dp_read        = usb_pads.dp_read,
-            o_io_usb_0_dp_write       = usb_pads.dp_write,
-            o_io_usb_0_dp_writeEnable = usb_pads.dp_write_enable,
-            i_io_usb_0_dm_read        = usb_pads.dm_read,
-            o_io_usb_0_dm_write       = usb_pads.dm_write,
-            o_io_usb_0_dm_writeEnable = usb_pads.dm_write_enable,
+            i_io_usb_0_dp_read        = usb_ios.dp_i,
+            o_io_usb_0_dp_write       = usb_ios.dp_o,
+            o_io_usb_0_dp_writeEnable = usb_ios.dp_oe,
+            i_io_usb_0_dm_read        = usb_ios.dm_i,
+            o_io_usb_0_dm_write       = usb_ios.dm_o,
+            o_io_usb_0_dm_writeEnable = usb_ios.dm_oe,
+        )
+        self.specials += SDRTristate(
+            io = pads.dp,
+            o  = usb_ios.dp_o,
+            oe = usb_ios.dp_oe,
+            i  = usb_ios.dp_i,
+        )
+        self.specials += SDRTristate(
+            io = pads.dm,
+            o  = usb_ios.dm_o,
+            oe = usb_ios.dm_oe,
+            i  = usb_ios.dm_i,
         )
         platform.add_source("UsbOhciWishbone.v") # FIXME: Add generated netlist.
