@@ -12,6 +12,8 @@ class USBHost(Module, AutoCSR):
         self.wb_ctrl = wb_ctrl = wishbone.Interface(data_width=32)
         self.wb_dma  = wb_dma  = wishbone.Interface(data_width=32)
 
+        self.interrupt = Signal()
+
         usb_ios = Record([
             ("dp_i",  1), ("dp_o",  1), ("dp_oe", 1),
             ("dm_i",  1), ("dm_o",  1), ("dm_oe", 1),
@@ -22,7 +24,7 @@ class USBHost(Module, AutoCSR):
             i_clk   = ClockSignal("sys"),
             i_reset = ResetSignal("sys"),
 
-            # Wishbone Control. CHECKME: SEL missing? DAT_MISO-> dat_r? DAT_MOSI > dat_w?
+            # Wishbone Control.
             i_io_ctrl_CYC      = wb_ctrl.cyc,
             i_io_ctrl_STB      = wb_ctrl.stb,
             o_io_ctrl_ACK      = wb_ctrl.ack,
@@ -30,6 +32,7 @@ class USBHost(Module, AutoCSR):
             i_io_ctrl_ADR      = wb_ctrl.adr,
             o_io_ctrl_DAT_MISO = wb_ctrl.dat_r,
             i_io_ctrl_DAT_MOSI = wb_ctrl.dat_w,
+            i_io_ctrl_SEL      = wb_ctrl.sel,
 
             # Wishbone DMA.
             o_io_dma_CYC      = wb_dma.cyc,
@@ -45,7 +48,7 @@ class USBHost(Module, AutoCSR):
             o_io_dma_BTE      = wb_dma.bte,
 
             # Interrupt.
-            o_io_interrupt = Signal(), # FIXME: Connect.
+            o_io_interrupt = self.interrupt,
 
             # USB
             i_io_usb_0_dp_read        = usb_ios.dp_i,

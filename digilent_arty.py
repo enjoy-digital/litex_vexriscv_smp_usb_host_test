@@ -88,6 +88,7 @@ class BaseSoC(SoCCore):
     }}
     mem_map = {**SoCCore.mem_map, **{
         "ethmac":       0xb0000000, # len: 0x2000
+        "usb_host":     0xc0000000,
         "spiflash":     0xd0000000,
         "csr":          0xf0000000,
     }}
@@ -156,9 +157,10 @@ class BaseSoC(SoCCore):
         ]
         platform.add_extension(_usb_pmod_ios)
         self.submodules.usb_host = USBHost(platform, platform.request("usb_pmoda"))
-        self.bus.add_slave("usb_host_ctrl", self.usb_host.wb_ctrl, region=SoCRegion(origin=0x80000000, size=0x100000, cached=False)) # FIXME: Mapping.
+        self.bus.add_slave("usb_host_ctrl", self.usb_host.wb_ctrl, region=SoCRegion(origin=self.mem_map["usb_host"], size=0x100000, cached=False)) # FIXME: Mapping.
         self.dma_bus.add_master("usb_host_dma", master=self.usb_host.wb_dma)
 
+        self.comb += self.cpu.interrupt[16].eq(self.usb_host.interrupt)
 
     # DTS generation ---------------------------------------------------------------------------
     def generate_dts(self, board_name):

@@ -229,7 +229,20 @@ def generate_dts(d, initrd_start=None, initrd_size=None, polling=False):
     ethmac_rx_slots  = d["constants"]["ethmac_rx_slots"],
     ethmac_interrupt = "" if polling else "interrupts = <{}>;".format(d["constants"]["ethmac_interrupt"]))
 
-   # SPI Flash -------------------------------------------------------------------------------------
+    # USB Host -------------------------------------------------------------------------------------
+    if True: # FIXME
+        dts += """
+            usb0: mac@{usb_host_mem_base:x} {{
+                compatible = "generic-ohci";
+                reg = <0x{usb_host_mem_base:x} 0x1000>;
+                {usb_host_interrupt}
+                status = "okay";
+            }};
+""".format(
+    usb_host_mem_base  = d["memories"]["usb_host_ctrl"]["base"],
+    usb_host_interrupt = "" if polling else "interrupts = <{}>;".format(16)) # FIXME
+
+    # SPI Flash ------------------------------------------------------------------------------------
 
     if "spiflash" in d["csr_bases"]:
         aliases["spiflash"] = "litespiflash"
