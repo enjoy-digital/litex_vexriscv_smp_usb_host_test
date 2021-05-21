@@ -74,6 +74,20 @@ class _CRG(Module):
 # BaseSoC ------------------------------------------------------------------------------------------
 
 class BaseSoC(SoCCore):
+    csr_map = {**SoCCore.csr_map, **{
+        "ctrl":       0,
+        "uart":       2,
+        "timer0":     3,
+    }}
+    interrupt_map = {**SoCCore.interrupt_map, **{
+        "uart":       0,
+        "timer0":     1,
+    }}
+    mem_map = {**SoCCore.mem_map, **{
+        "ethmac":       0xb0000000, # len: 0x2000
+        "spiflash":     0xd0000000,
+        "csr":          0xf0000000,
+    }}
     def __init__(self, variant="a7-35", toolchain="vivado", sys_clk_freq=int(96e6), with_ethernet=False, with_etherbone=False, eth_ip="192.168.1.50", eth_dynamic_ip=False, ident_version=True, with_jtagbone=True, with_mapped_flash=False, **kwargs):
         platform = arty.Platform(variant=variant, toolchain=toolchain)
 
@@ -190,7 +204,7 @@ def main():
         soc.add_spi_sdcard()
     if args.with_sdcard:
         soc.add_sdcard()
-    builder = Builder(soc, **builder_argdict(args))
+    builder = Builder(soc, csr_json="csr.json")
     builder_kwargs = vivado_build_argdict(args) if args.toolchain == "vivado" else {}
     builder.build(**builder_kwargs, run=args.build)
 
