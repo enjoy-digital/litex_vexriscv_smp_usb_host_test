@@ -9,6 +9,7 @@
 
 import os
 import argparse
+import json
 
 from migen import *
 
@@ -32,6 +33,8 @@ from litespi.phy.generic import LiteSPIPHY
 from litespi import LiteSPI
 
 from vexriscv_smp import VexRiscvSMP
+
+from litex_json2dts import generate_dts
 
 # CRG ----------------------------------------------------------------------------------------------
 
@@ -92,7 +95,8 @@ class BaseSoC(SoCCore):
         platform = arty.Platform(variant=variant, toolchain=toolchain)
 
         # SoCCore ----------------------------------------------------------------------------------
-        kwargs["cpu_type"] = "vexriscv_smp"
+        kwargs["cpu_type"]    = "vexriscv_smp"
+        kwargs["cpu_variant"] = "linux"
         kwargs["cpu_cls"]  = VexRiscvSMP
         SoCCore.__init__(self, platform, sys_clk_freq,
             ident          = "LiteX SoC on Arty A7",
@@ -155,6 +159,33 @@ class BaseSoC(SoCCore):
         self.bus.add_slave("usb_host_ctrl", self.usb_host.wb_ctrl, region=SoCRegion(origin=0x80000000, size=0x100000, cached=False)) # FIXME: Mapping.
         self.dma_bus.add_master("usb_host_dma", master=self.usb_host.wb_dma)
 
+
+    # DTS generation ---------------------------------------------------------------------------
+    def generate_dts(self, board_name):
+        json_src = os.path.join("build", board_name, "csr.json")
+        dts = os.path.join("build", board_name, "{}.dts".format(board_name))
+
+        with open(json_src) as json_file, open(dts, "w") as dts_file:
+            dts_content = generate_dts(json.load(json_file), polling=False)
+            dts_file.write(dts_content)
+
+    # DTS compilation --------------------------------------------------------------------------
+    def compile_dts(self, board_name, symbols=False):
+        dts = os.path.join("build", board_name, "{}.dts".format(board_name))
+        dtb = os.path.join("build", board_name, "{}.dtb".format(board_name))
+        subprocess.check_call(
+            "dtc {} -O dtb -o {} {}".format("-@" if symbols else "", dtb, dts), shell=True)
+
+    # DTB combination --------------------------------------------------------------------------
+    def combine_dtb(self, board_name, overlays=""):
+        dtb_in = os.path.join("build", board_name, "{}.dtb".format(board_name))
+        dtb_out = os.path.join("rv32.dtb")
+        if overlays == "":
+            shutil.copyfile(dtb_in, dtb_out)
+        else:
+            subprocess.check_call(
+                "fdtoverlay -i {} -o {} {}".format(dtb_in, dtb_out, overlays), shell=True)
+
 # Build --------------------------------------------------------------------------------------------
 
 def main():
@@ -204,9 +235,13 @@ def main():
         soc.add_spi_sdcard()
     if args.with_sdcard:
         soc.add_sdcard()
-    builder = Builder(soc, csr_json="csr.json")
+    builder = Builder(soc, csr_json=f"build/digilent_arty/csr.json")
     builder_kwargs = vivado_build_argdict(args) if args.toolchain == "vivado" else {}
     builder.build(**builder_kwargs, run=args.build)
+
+    soc.generate_dts("digilent_arty")
+    soc.compile_dts("digilent_arty")
+    soc.combine_dtb("digilent_arty")
 
     if args.load:
         prog = soc.platform.create_programmer()
