@@ -120,8 +120,8 @@ class BaseSoC(SoCCore):
         from litex.build.generic_platform import Subsignal, Pins, IOStandard
         _usb_pmod_ios = [
             ("usb_pmoda", 0,
-                Subsignal("dp", Pins("pmoda:1")),
-                Subsignal("dm", Pins("pmoda:2")),
+                Subsignal("dp", Pins("pmoda:0")),
+                Subsignal("dm", Pins("pmoda:4")),
                 IOStandard("LVCMOS33"),
             )
         ]
