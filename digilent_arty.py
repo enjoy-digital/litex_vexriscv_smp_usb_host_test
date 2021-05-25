@@ -41,7 +41,7 @@ from litex_json2dts import generate_dts
 class _CRG(Module):
     def __init__(self, platform, sys_clk_freq, with_mapped_flash):
         self.rst = Signal()
-        self.clock_domains.cd_usb       = ClockDomain()
+        self.clock_domains.cd_sys_pll   = ClockDomain()
         self.clock_domains.cd_sys       = ClockDomain()
         self.clock_domains.cd_sys4x     = ClockDomain(reset_less=True)
         self.clock_domains.cd_sys4x_dqs = ClockDomain(reset_less=True)
@@ -58,20 +58,20 @@ class _CRG(Module):
         self.submodules.pll = pll = S7MMCM(speedgrade=-1)
         self.comb += pll.reset.eq(rst | self.rst)
         pll.register_clkin(clk100, 100e6)
-        pll.create_clkout(self.cd_usb,     96e6, margin=0)
+        pll.create_clkout(self.cd_sys_pll, sys_clk_freq, margin=0)
         pll.create_clkout(self.cd_idelay, 200e6)
-        pll.create_clkout(self.cd_eth,     25e6)
-
+        pll.create_clkout(self.cd_eth,    25e6)
         self.submodules.idelayctrl = S7IDELAYCTRL(self.cd_idelay)
 
         self.comb += platform.request("eth_ref_clk").eq(self.cd_eth.clk)
 
         # Sys PLL.
         self.submodules.sys_pll = sys_pll = S7PLL(speedgrade=-1)
-        self.comb += sys_pll.reset.eq(~pll.locked)
-        sys_pll.register_clkin(self.cd_usb.clk, 96e6)
-        sys_pll.create_clkout(self.cd_sys,     sys_clk_freq, margin=0)
-        sys_pll.create_clkout(self.cd_sys4x, 4*sys_clk_freq, margin=0)
+        self.comb += sys_pll.reset.eq(ResetSignal("sys_pll"))
+        sys_pll.register_clkin(self.cd_sys_pll.clk, sys_clk_freq)
+        sys_pll.create_clkout(self.cd_sys,       sys_clk_freq,   margin=0)
+        sys_pll.create_clkout(self.cd_sys4x,     4*sys_clk_freq, margin=0)
+        sys_pll.create_clkout(self.cd_sys4x_dqs, 4*sys_clk_freq, margin=0, phase=90)
         platform.add_false_path_constraints(self.cd_sys.clk, sys_pll.clkin) # Ignore sys_clk to pll.clkin path created by SoC's rst.
 
 # BaseSoC ------------------------------------------------------------------------------------------
