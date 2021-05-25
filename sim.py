@@ -314,6 +314,16 @@ class SimSoC(SoCCore):
         else:
             self.comb += platform.trace.eq(1)
 
+
+        # USB Host ---------------------------------------------------------------------------------
+        from usb_host import USBHost
+        usb_ios = Record([("dp", 1), ("dm", 1)])
+        self.submodules.usb_host = USBHost(platform, usb_ios)
+        self.bus.add_slave("usb_host_ctrl", self.usb_host.wb_ctrl, region=SoCRegion(origin=0xc0000000, size=0x100000, cached=False)) # FIXME: Mapping.
+        self.dma_bus.add_master("usb_host_dma", master=self.usb_host.wb_dma)
+
+        self.comb += self.cpu.interrupt[16].eq(self.usb_host.interrupt)
+
 # Build --------------------------------------------------------------------------------------------
 
 def generate_gtkw_savefile(builder, vns, trace_fst):
@@ -390,6 +400,16 @@ def main():
     sys_clk_freq = int(1e6)
     sim_config = SimConfig()
     sim_config.add_clocker("sys_clk", freq_hz=sys_clk_freq)
+
+    # Customize Simulation config to match target --------------------------------------------------
+
+    from vexriscv_smp import VexRiscvSMP
+    soc_kwargs["cpu_type"]    = "vexriscv_smp"
+    soc_kwargs["cpu_variant"] = "linux"
+    soc_kwargs["cpu_cls"]  = VexRiscvSMP
+    args.with_sdram           = True
+    args.sdram_module         = "MT41K128M16"
+    args.sdram_data_width     = 16
 
     # Configuration --------------------------------------------------------------------------------
 
