@@ -15,6 +15,10 @@ env/
 
 # Build files
 build/*
+images/*
+prog/*
+rv32.dtb
+csr.csv
 
 # Binaries files
 *.bin
@@ -23,3 +27,4 @@ build/*
 *.d
 *.o
 *.elf
+

@@ -1,6 +1,6 @@
-// Generator : SpinalHDL v1.4.4    git head : 88d1d305143a443f64f48d4018afcb4b59c0a63e
+// Generator : SpinalHDL v1.4.4    git head : a472e46f0aac962d9b578b271632481386124736
 // Component : UsbOhciWishbone
-// Git hash  : 585c18193f4be9783fb87d94784b6cb9d426b79f
+// Git hash  : 0e32b44be0a6306d2090c6e85eb0df6f1a84c534
 
 
 `define MainState_binary_sequential_type [1:0]
@@ -3186,8 +3186,8 @@ module UsbOhciWishbone_UsbOhci (
   assign _zz_104 = ((! (dataRx_stateReg == `dataRx_enumDefinition_binary_sequential_dataRx_IDLE)) && (dataRx_stateNext == `dataRx_enumDefinition_binary_sequential_dataRx_IDLE));
   assign _zz_105 = ((! (endpoint_stateReg == `endpoint_enumDefinition_binary_sequential_endpoint_ACK_RX)) && (endpoint_stateNext == `endpoint_enumDefinition_binary_sequential_endpoint_ACK_RX));
   assign _zz_106 = (! io_phy_rx_active);
-  assign _zz_107 = (! io_phy_rx_active);
-  assign _zz_108 = ((! (endpoint_stateReg == `endpoint_enumDefinition_binary_sequential_endpoint_DATA_RX)) && (endpoint_stateNext == `endpoint_enumDefinition_binary_sequential_endpoint_DATA_RX));
+  assign _zz_107 = ((! (endpoint_stateReg == `endpoint_enumDefinition_binary_sequential_endpoint_DATA_RX)) && (endpoint_stateNext == `endpoint_enumDefinition_binary_sequential_endpoint_DATA_RX));
+  assign _zz_108 = (! io_phy_rx_active);
   assign _zz_109 = ((operational_allowPeriodic && (! operational_periodicDone)) && (! frame_section1));
   assign _zz_110 = ((operational_stateReg == `operational_enumDefinition_binary_sequential_operational_BOOT) && (! (operational_stateNext == `operational_enumDefinition_binary_sequential_operational_BOOT)));
   assign _zz_111 = ((endpoint_ED_H || endpoint_ED_K) || endpoint_ED_tdEmpty);
@@ -6313,7 +6313,7 @@ module UsbOhciWishbone_UsbOhci (
         end
       end
       `dataRx_enumDefinition_binary_sequential_dataRx_DATA : begin
-        if(_zz_107)begin
+        if(_zz_108)begin
           dataRx_wantExit = 1'b1;
         end
       end
@@ -6324,7 +6324,7 @@ module UsbOhciWishbone_UsbOhci (
 
   always @ (*) begin
     dataRx_wantStart = 1'b0;
-    if(_zz_108)begin
+    if(_zz_107)begin
       dataRx_wantStart = 1'b1;
     end
   end
@@ -6346,7 +6346,7 @@ module UsbOhciWishbone_UsbOhci (
       `dataRx_enumDefinition_binary_sequential_dataRx_PID : begin
       end
       `dataRx_enumDefinition_binary_sequential_dataRx_DATA : begin
-        if(! _zz_107) begin
+        if(! _zz_108) begin
           if(io_phy_rx_valid)begin
             if((dataRx_valids == 2'b11))begin
               dataRx_data_valid = 1'b1;
@@ -6368,7 +6368,7 @@ module UsbOhciWishbone_UsbOhci (
       `dataRx_enumDefinition_binary_sequential_dataRx_PID : begin
       end
       `dataRx_enumDefinition_binary_sequential_dataRx_DATA : begin
-        if(! _zz_107) begin
+        if(! _zz_108) begin
           if(io_phy_rx_valid)begin
             _zz_75 = 1'b1;
           end
@@ -7041,7 +7041,7 @@ module UsbOhciWishbone_UsbOhci (
       default : begin
       end
     endcase
-    if(_zz_108)begin
+    if(_zz_107)begin
       endpoint_dmaLogic_wantStart = 1'b1;
     end
   end
@@ -7431,7 +7431,7 @@ module UsbOhciWishbone_UsbOhci (
         end
       end
       `dataRx_enumDefinition_binary_sequential_dataRx_DATA : begin
-        if(_zz_107)begin
+        if(_zz_108)begin
           dataRx_stateNext = `dataRx_enumDefinition_binary_sequential_dataRx_BOOT;
         end
       end
@@ -8667,7 +8667,7 @@ module UsbOhciWishbone_UsbOhci (
         end
       end
       `dataRx_enumDefinition_binary_sequential_dataRx_DATA : begin
-        if(_zz_107)begin
+        if(_zz_108)begin
           if(((! (dataRx_valids == 2'b11)) || (dataRx_crc16_io_result != 16'h800d)))begin
             dataRx_crcError <= 1'b1;
           end
@@ -9289,57 +9289,100 @@ module UsbOhciWishbone_BmbToWishbone (
   input               clk,
   input               reset
 );
-  wire       [11:0]   _zz_2;
+  wire                _zz_2;
   wire       [11:0]   _zz_3;
   wire       [11:0]   _zz_4;
-  wire       [5:0]    _zz_5;
-  wire       [11:0]   _zz_6;
+  wire       [11:0]   _zz_5;
+  wire       [5:0]    _zz_6;
+  wire       [11:0]   _zz_7;
+  wire                inputCmd_valid;
+  wire                inputCmd_ready;
+  wire                inputCmd_payload_last;
+  wire       [0:0]    inputCmd_payload_fragment_opcode;
+  wire       [31:0]   inputCmd_payload_fragment_address;
+  wire       [5:0]    inputCmd_payload_fragment_length;
+  wire       [31:0]   inputCmd_payload_fragment_data;
+  wire       [3:0]    inputCmd_payload_fragment_mask;
+  reg                 inputCmd_regs_valid;
+  reg                 inputCmd_regs_ready;
+  reg                 inputCmd_regs_payload_last;
+  reg        [0:0]    inputCmd_regs_payload_fragment_opcode;
+  reg        [31:0]   inputCmd_regs_payload_fragment_address;
+  reg        [5:0]    inputCmd_regs_payload_fragment_length;
+  reg        [31:0]   inputCmd_regs_payload_fragment_data;
+  reg        [3:0]    inputCmd_regs_payload_fragment_mask;
   reg        [3:0]    beatCounter;
   wire                beatLast;
-  reg                 io_input_cmd_payload_first;
+  reg                 inputCmd_payload_first;
   reg                 _zz_1;
   reg        [31:0]   io_output_DAT_MISO_regNext;
   reg                 beatLast_regNext;
 
-  assign _zz_2 = (_zz_4 + _zz_6);
-  assign _zz_3 = io_input_cmd_payload_fragment_address[11 : 0];
-  assign _zz_4 = _zz_3;
-  assign _zz_5 = ({2'd0,beatCounter} <<< 2);
-  assign _zz_6 = {6'd0, _zz_5};
-  assign beatLast = (beatCounter == io_input_cmd_payload_fragment_length[5 : 2]);
-  assign io_output_ADR = ({io_input_cmd_payload_fragment_address[31 : 12],_zz_2} >>> 2);
-  assign io_output_CTI = (io_input_cmd_payload_last ? (io_input_cmd_payload_first ? 3'b000 : 3'b111) : 3'b010);
+  assign _zz_2 = (! inputCmd_regs_valid);
+  assign _zz_3 = (_zz_5 + _zz_7);
+  assign _zz_4 = inputCmd_payload_fragment_address[11 : 0];
+  assign _zz_5 = _zz_4;
+  assign _zz_6 = ({2'd0,beatCounter} <<< 2);
+  assign _zz_7 = {6'd0, _zz_6};
+  assign inputCmd_valid = inputCmd_regs_valid;
+  assign inputCmd_payload_last = inputCmd_regs_payload_last;
+  assign inputCmd_payload_fragment_opcode = inputCmd_regs_payload_fragment_opcode;
+  assign inputCmd_payload_fragment_address = inputCmd_regs_payload_fragment_address;
+  assign inputCmd_payload_fragment_length = inputCmd_regs_payload_fragment_length;
+  assign inputCmd_payload_fragment_data = inputCmd_regs_payload_fragment_data;
+  assign inputCmd_payload_fragment_mask = inputCmd_regs_payload_fragment_mask;
+  assign io_input_cmd_ready = inputCmd_regs_ready;
+  assign beatLast = (beatCounter == inputCmd_payload_fragment_length[5 : 2]);
+  assign io_output_ADR = ({inputCmd_payload_fragment_address[31 : 12],_zz_3} >>> 2);
+  assign io_output_CTI = (inputCmd_payload_last ? (inputCmd_payload_first ? 3'b000 : 3'b111) : 3'b010);
   assign io_output_BTE = 2'b00;
-  assign io_output_SEL = ((io_input_cmd_payload_fragment_opcode == 1'b1) ? io_input_cmd_payload_fragment_mask : 4'b1111);
-  assign io_output_WE = (io_input_cmd_payload_fragment_opcode == 1'b1);
-  assign io_output_DAT_MOSI = io_input_cmd_payload_fragment_data;
-  assign io_input_cmd_ready = (io_output_ACK && ((io_input_cmd_payload_fragment_opcode == 1'b1) || beatLast));
-  assign io_output_CYC = io_input_cmd_valid;
-  assign io_output_STB = io_input_cmd_valid;
+  assign io_output_SEL = ((inputCmd_payload_fragment_opcode == 1'b1) ? inputCmd_payload_fragment_mask : 4'b1111);
+  assign io_output_WE = (inputCmd_payload_fragment_opcode == 1'b1);
+  assign io_output_DAT_MOSI = inputCmd_payload_fragment_data;
+  assign inputCmd_ready = (io_output_ACK && ((inputCmd_payload_fragment_opcode == 1'b1) || beatLast));
+  assign io_output_CYC = inputCmd_valid;
+  assign io_output_STB = inputCmd_valid;
   assign io_input_rsp_valid = _zz_1;
   assign io_input_rsp_payload_fragment_data = io_output_DAT_MISO_regNext;
   assign io_input_rsp_payload_last = beatLast_regNext;
   assign io_input_rsp_payload_fragment_opcode = 1'b0;
   always @ (posedge clk or posedge reset) begin
     if (reset) begin
+      inputCmd_regs_valid <= 1'b0;
+      inputCmd_regs_ready <= 1'b1;
       beatCounter <= 4'b0000;
-      io_input_cmd_payload_first <= 1'b1;
+      inputCmd_payload_first <= 1'b1;
       _zz_1 <= 1'b0;
     end else begin
-      if((io_input_cmd_valid && io_output_ACK))begin
+      if(_zz_2)begin
+        inputCmd_regs_valid <= io_input_cmd_valid;
+        inputCmd_regs_ready <= (! io_input_cmd_valid);
+      end else begin
+        inputCmd_regs_valid <= (! inputCmd_ready);
+        inputCmd_regs_ready <= inputCmd_ready;
+      end
+      if((inputCmd_valid && io_output_ACK))begin
         beatCounter <= (beatCounter + 4'b0001);
-        if((io_input_cmd_ready && io_input_cmd_payload_last))begin
+        if((inputCmd_ready && inputCmd_payload_last))begin
           beatCounter <= 4'b0000;
         end
       end
-      if((io_input_cmd_valid && io_input_cmd_ready))begin
-        io_input_cmd_payload_first <= io_input_cmd_payload_last;
+      if((inputCmd_valid && inputCmd_ready))begin
+        inputCmd_payload_first <= inputCmd_payload_last;
       end
-      _zz_1 <= ((io_input_cmd_valid && io_output_ACK) && ((io_input_cmd_payload_fragment_opcode == 1'b0) || beatLast));
+      _zz_1 <= ((inputCmd_valid && io_output_ACK) && ((inputCmd_payload_fragment_opcode == 1'b0) || beatLast));
     end
   end
 
   always @ (posedge clk) begin
+    if(_zz_2)begin
+      inputCmd_regs_payload_last <= io_input_cmd_payload_last;
+      inputCmd_regs_payload_fragment_opcode <= io_input_cmd_payload_fragment_opcode;
+      inputCmd_regs_payload_fragment_address <= io_input_cmd_payload_fragment_address;
+      inputCmd_regs_payload_fragment_length <= io_input_cmd_payload_fragment_length;
+      inputCmd_regs_payload_fragment_data <= io_input_cmd_payload_fragment_data;
+      inputCmd_regs_payload_fragment_mask <= io_input_cmd_payload_fragment_mask;
+    end
     io_output_DAT_MISO_regNext <= io_output_DAT_MISO;
     beatLast_regNext <= beatLast;
   end
