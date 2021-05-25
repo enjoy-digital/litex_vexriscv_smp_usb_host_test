@@ -70,4 +70,4 @@ class USBHost(Module, AutoCSR):
             oe = usb_ios.dm_oe,
             i  = usb_ios.dm_i,
         )
-        platform.add_source("UsbOhciWishbone.v") # FIXME: Add generated netlist.
+        platform.add_source("UsbOhciWishbone.v")
