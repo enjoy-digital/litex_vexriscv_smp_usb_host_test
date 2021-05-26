@@ -41,7 +41,7 @@ from litex_json2dts import generate_dts
 class _CRG(Module):
     def __init__(self, platform, sys_clk_freq, with_mapped_flash):
         self.rst = Signal()
-        self.clock_domains.cd_sys_pll   = ClockDomain()
+        self.clock_domains.cd_usb       = ClockDomain()
         self.clock_domains.cd_sys       = ClockDomain()
         self.clock_domains.cd_sys4x     = ClockDomain(reset_less=True)
         self.clock_domains.cd_sys4x_dqs = ClockDomain(reset_less=True)
@@ -50,30 +50,20 @@ class _CRG(Module):
 
         # # #
 
-        # Clk / Rst.
-        clk100 = platform.request("clk100")
-        rst    = ~platform.request("cpu_reset")
-
-        # Main PLL.
         self.submodules.pll = pll = S7MMCM(speedgrade=-1)
-        self.comb += pll.reset.eq(rst | self.rst)
-        pll.register_clkin(clk100, 100e6)
-        pll.create_clkout(self.cd_sys_pll, sys_clk_freq, margin=0)
-        pll.create_clkout(self.cd_idelay, 200e6)
-        pll.create_clkout(self.cd_eth,    25e6)
+        self.comb += pll.reset.eq(~platform.request("cpu_reset") | self.rst)
+        pll.register_clkin(platform.request("clk100"), 100e6)
+        pll.create_clkout(self.cd_usb,       48e6, margin=0)
+        pll.create_clkout(self.cd_sys,       sys_clk_freq)
+        pll.create_clkout(self.cd_sys4x,     4*sys_clk_freq)
+        pll.create_clkout(self.cd_sys4x_dqs, 4*sys_clk_freq, phase=90)
+        pll.create_clkout(self.cd_idelay,    200e6)
+        pll.create_clkout(self.cd_eth,       25e6)
+        platform.add_false_path_constraints(self.cd_sys.clk, pll.clkin) # Ignore sys_clk to pll.clkin path created by SoC's rst.
+
         self.submodules.idelayctrl = S7IDELAYCTRL(self.cd_idelay)
 
         self.comb += platform.request("eth_ref_clk").eq(self.cd_eth.clk)
-
-        # Sys PLL.
-        self.submodules.sys_pll = sys_pll = S7PLL(speedgrade=-1)
-        self.comb += sys_pll.reset.eq(ResetSignal("sys_pll"))
-        sys_pll.register_clkin(self.cd_sys_pll.clk, sys_clk_freq)
-        sys_pll.create_clkout(self.cd_sys,       sys_clk_freq,   margin=0)
-        sys_pll.create_clkout(self.cd_sys4x,     4*sys_clk_freq, margin=0)
-        sys_pll.create_clkout(self.cd_sys4x_dqs, 4*sys_clk_freq, margin=0, phase=90)
-        platform.add_false_path_constraints(self.cd_sys.clk, sys_pll.clkin) # Ignore sys_clk to pll.clkin path created by SoC's rst.
-
 # BaseSoC ------------------------------------------------------------------------------------------
 
 class BaseSoC(SoCCore):
@@ -92,7 +82,7 @@ class BaseSoC(SoCCore):
         "spiflash":     0xd0000000,
         "csr":          0xf0000000,
     }}
-    def __init__(self, variant="a7-35", toolchain="vivado", sys_clk_freq=int(96e6), with_ethernet=False, with_etherbone=False, eth_ip="192.168.1.50", eth_dynamic_ip=False, ident_version=True, with_jtagbone=True, with_mapped_flash=False, **kwargs):
+    def __init__(self, variant="a7-35", toolchain="vivado", sys_clk_freq=int(100e6), with_ethernet=False, with_etherbone=False, eth_ip="192.168.1.50", eth_dynamic_ip=False, ident_version=True, with_jtagbone=True, with_mapped_flash=False, **kwargs):
         platform = arty.Platform(variant=variant, toolchain=toolchain)
 
         # SoCCore ----------------------------------------------------------------------------------
@@ -196,7 +186,7 @@ def main():
     parser.add_argument("--build",               action="store_true",              help="Build bitstream")
     parser.add_argument("--load",                action="store_true",              help="Load bitstream")
     parser.add_argument("--variant",             default="a7-35",                  help="Board variant: a7-35 (default) or a7-100")
-    parser.add_argument("--sys-clk-freq",        default=96e6,                     help="System clock frequency (default: 96MHz)")
+    parser.add_argument("--sys-clk-freq",        default=100e6,                     help="System clock frequency (default: 96MHz)")
     ethopts = parser.add_mutually_exclusive_group()
     ethopts.add_argument("--with-ethernet",      action="store_true",              help="Enable Ethernet support")
     ethopts.add_argument("--with-etherbone",     action="store_true",              help="Enable Etherbone support")

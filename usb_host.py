@@ -21,8 +21,10 @@ class USBHost(Module, AutoCSR):
 
         self.specials += Instance("UsbOhciWishbone",
             # Clk / Rst.
-            i_clk   = ClockSignal("sys"),
-            i_reset = ResetSignal("sys"),
+            i_phy_clk    = ClockSignal("usb"),
+            i_phy_reset  = ResetSignal("usb"),
+            i_ctrl_clk   = ClockSignal("sys"),
+            i_ctrl_reset = ResetSignal("sys"),
 
             # Wishbone Control.
             i_io_ctrl_CYC      = wb_ctrl.cyc,
