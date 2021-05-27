@@ -146,7 +146,7 @@ class BaseSoC(SoCCore):
             )
         ]
         platform.add_extension(_usb_pmod_ios)
-        self.submodules.usb_host = USBHost(platform, platform.request("usb_pmoda"))
+        self.submodules.usb_host = USBHost(platform, platform.request("usb_pmoda"), ports_count=1, phy_frequency=48000000)
         self.bus.add_slave("usb_host_ctrl", self.usb_host.wb_ctrl, region=SoCRegion(origin=self.mem_map["usb_host"], size=0x100000, cached=False)) # FIXME: Mapping.
         self.dma_bus.add_master("usb_host_dma", master=self.usb_host.wb_dma)
 

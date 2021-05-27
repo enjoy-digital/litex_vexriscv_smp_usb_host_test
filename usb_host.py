@@ -1,3 +1,7 @@
+import os
+from os import path
+
+from litex import get_data_mod
 from migen import *
 
 from litex.soc.interconnect.csr import *
@@ -8,9 +12,49 @@ from litex.build.io import SDRTristate
 # USB Host -----------------------------------------------------------------------------------------
 
 class USBHost(Module, AutoCSR):
-    def __init__(self, platform, pads):
+
+    def get_netlist_name(self):
+        return "UsbOhciWishbone" \
+        f"_Dw{self.dma_width}"    \
+        f"_Pc{self.ports_count}"    \
+        f"_Pf{self.phy_frequency}"
+
+    def add_sources(self, platform):
+        vdir = get_data_mod("misc", "usb_ohci").data_location
+        netlist_name = self.get_netlist_name()
+
+        print(f"USB OHCI netlist : {netlist_name}")
+        if not path.exists(os.path.join(vdir, netlist_name + ".v")):
+            self.generate_netlist()
+
+        platform.add_source(os.path.join(vdir,  netlist_name + ".v"), "verilog")
+
+    def generate_netlist(self):
+        print(f"Generating USB OHCI netlist")
+        vdir = get_data_mod("misc", "usb_ohci").data_location
+        gen_args = []
+        gen_args.append(f"--port-count={self.ports_count}")
+        gen_args.append(f"--phy-frequency={self.phy_frequency}")
+        gen_args.append(f"--dma-width={self.dma_width}")
+        gen_args.append(f"--netlist-name={self.get_netlist_name()}")
+        gen_args.append(f"--netlist-directory={vdir}")
+
+        cmd = 'cd {path} && sbt "lib/runMain spinal.lib.com.usb.ohci.UsbOhciWishbone {args}"'.format(
+            path=os.path.join(vdir, "ext", "SpinalHDL"), args=" ".join(gen_args))
+        print("!!! "   + cmd)
+        if os.system(cmd) != 0:
+            raise OSError('Failed to run sbt')
+
+
+    def __init__(self, platform, pads, ports_count, phy_frequency, dma_width = 32):
+        self.ports_count = ports_count
+        self.phy_frequency = phy_frequency
+        self.dma_width = dma_width
+
+        self.add_sources(platform)
+
         self.wb_ctrl = wb_ctrl = wishbone.Interface(data_width=32)
-        self.wb_dma  = wb_dma  = wishbone.Interface(data_width=32)
+        self.wb_dma  = wb_dma  = wishbone.Interface(data_width=dma_width)
 
         self.interrupt = Signal()
 
@@ -19,7 +63,7 @@ class USBHost(Module, AutoCSR):
             ("dm_i",  1), ("dm_o",  1), ("dm_oe", 1),
         ])
 
-        self.specials += Instance("UsbOhciWishbone",
+        self.specials += Instance(self.get_netlist_name(),
             # Clk / Rst.
             i_phy_clk    = ClockSignal("usb"),
             i_phy_reset  = ResetSignal("usb"),
@@ -72,4 +116,4 @@ class USBHost(Module, AutoCSR):
             oe = usb_ios.dm_oe,
             i  = usb_ios.dm_i,
         )
-        platform.add_source("UsbOhciWishbone.v")
+

@@ -28,3 +28,5 @@ csr.csv
 *.o
 *.elf
 
+# IDE
+.idea
