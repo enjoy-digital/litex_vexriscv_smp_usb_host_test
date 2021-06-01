@@ -34,7 +34,7 @@ from litespi import LiteSPI
 
 from vexriscv_smp import VexRiscvSMP
 
-from litex_json2dts import generate_dts
+from litex.tools.litex_json2dts import generate_dts
 
 # CRG ----------------------------------------------------------------------------------------------
 
